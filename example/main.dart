@@ -6,11 +6,9 @@ main() async {
   var light = lights[0];
   await light.connect();
 
-  if(!light.power){
+  if (!(light.power ?? false)) {
     await light.turnOn();
   }
 
-  await light.setCustomPattern([
-    Color(255, 0, 0), Color.cyan, Color.orange
-  ], TransitionType.Gradual, 70);
+  await light.setCustomPattern([Color(255, 0, 0), Color.cyan, Color.orange], TransitionType.Gradual, 70);
 }
