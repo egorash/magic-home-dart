@@ -26,16 +26,20 @@ class LightDiscovery {
     await RawDatagramSocket.bind(InternetAddress.anyIPv4, _port).then((socket) {
       // Send broadcast message to LAN.
       socket.broadcastEnabled = true;
-      socket.send(utf8.encode(_discovery_message), InternetAddress("255.255.255.255"), _port);
+      socket.send(utf8.encode(_discovery_message),
+          InternetAddress("255.255.255.255"), _port);
 
       // Start listening.
       subscription = socket.listen((e) {
         // Receive and decode data.
         final data = socket.receive();
-        var response = String.fromCharCodes(data!.data);
-        if (response != _discovery_message) {
-          var ip = response.split(',')[0];
-          lights.add(Light(ip));
+        if (data != null) {
+          var response = String.fromCharCodes(data!.data);
+          if (response != _discovery_message) {
+            var ip = response.split(',')[0];
+            var id = response.split(',')[1];
+            lights.add(Light(ip, id));
+          }
         }
       });
     });

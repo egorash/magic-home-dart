@@ -14,7 +14,7 @@ enum LightMode { color, warmWhite, preset, custom, unknown }
 class Light {
   /// Creates a new light instance.
   /// Remember to connect it by calling `connect();`
-  Light(this.address);
+  Light(this.address, this.id);
 
   /// The network socket of the light.
   Socket? socket;
@@ -55,6 +55,8 @@ class Light {
 
   //Constants.
   int _port = 5577;
+
+  String id;
 
   /// Connects the socket to the light and sends a request to get light's status.
   Future<void> connect() async {
@@ -99,7 +101,8 @@ class Light {
 
     switch (mode) {
       case LightMode.color:
-        color = Color(dataRaw[6].toInt(), dataRaw[7].toInt(), dataRaw[8].toInt());
+        color =
+            Color(dataRaw[6].toInt(), dataRaw[7].toInt(), dataRaw[8].toInt());
         warmWhite = 0;
         break;
       case LightMode.warmWhite:
@@ -196,7 +199,8 @@ class Light {
   /// Use a list of Color objects to assign a list of colors the light will cycle through.
   ///
   /// Specify the transition type (Gradual, Strobe or Jump) and a speed value from 0 to 100.
-  Future<void> setCustomPattern(List<Color> colors, int transitionType, int speed) async {
+  Future<void> setCustomPattern(
+      List<Color> colors, int transitionType, int speed) async {
     List<int> message = [];
     message.add(0x51);
 
@@ -213,7 +217,8 @@ class Light {
       message.addAll([0, 1, 2, 3]);
     }
 
-    message.addAll([0x00, Utilis.speedToDelay(speed), transitionType, 0xff, 0x0f]);
+    message
+        .addAll([0x00, Utilis.speedToDelay(speed), transitionType, 0xff, 0x0f]);
 
     await _send(message);
 
@@ -244,8 +249,15 @@ class Light {
 
   /// Send a request to the light to get the time.
   Future<DateTime> _getTime() async {
-    final data = await _send([0x11, 0x1a, 0x1b, 0x0f], expectResponse: true) ?? [];
-    return DateTime(data[3] + 2000, data[4], data[5], data[6], data[7], data[8]);
+    final data =
+        await _send([0x11, 0x1a, 0x1b, 0x0f], expectResponse: true) ?? [];
+        try{
+        var result = DateTime(
+        data[3] + 2000, data[4], data[5], data[6], data[7], data[8]);
+    return result;
+        } catch(_){
+          return DateTime.now();
+        }
   }
 
   /// Update the brightness of this light based on the color values.
@@ -253,7 +265,8 @@ class Light {
     if (mode == LightMode.color)
       brightness = Utilis.determineBrightness(color!.r, color!.g, color!.b);
     else
-      brightness = Utilis.determineBrightness(warmWhite!, warmWhite!, warmWhite!);
+      brightness =
+          Utilis.determineBrightness(warmWhite!, warmWhite!, warmWhite!);
   }
 
   /// Get the protocol of the light.
@@ -276,14 +289,16 @@ class Light {
   Completer<Uint8List> _dataCompleter = Completer();
 
   /// Start listening to the socket.
-  void _startListening() => socket!.listen((data) => _dataCompleter.complete(data));
+  void _startListening() =>
+      socket!.listen((data) => _dataCompleter.complete(data));
 
   /// Sends bytes list to the socket and returns the response if you set
   /// [expectResponse] to true. Otherwise, it returns null.
   ///
   /// If you are expecting a response and [timeout] runs out,
   /// it will throw a [TimeoutException].
-  Future<Uint8List?> _send(List<int> data, {bool expectResponse = false}) async {
+  Future<Uint8List?> _send(List<int> data,
+      {bool expectResponse = false}) async {
     // Calculate and append csum.
     int csum = 0;
     for (int i = 0; i < data.length; i++) {
@@ -298,7 +313,8 @@ class Light {
 
     if (expectResponse) {
       // Wait for response.
-      Uint8List _data = await _dataCompleter.future.timeout(Duration(milliseconds: timeout));
+      Uint8List _data =
+          await _dataCompleter.future.timeout(Duration(milliseconds: timeout));
 
       // Reset the completer.
       _dataCompleter = Completer();
@@ -309,7 +325,8 @@ class Light {
   }
 
   /// Turn bytes list into hexadecimal string list.
-  List<String> _dataToHex(Uint8List data) => data.map((byte) => byte.toRadixString(16)).toList();
+  List<String> _dataToHex(Uint8List data) =>
+      data.map((byte) => byte.toRadixString(16)).toList();
 
   /// Returns a string containing all information about this instance (ex. color mode, color values, etc.).
   @override
